@@ -5872,7 +5872,7 @@ rd_kafka_DeleteAclsRequest(rd_kafka_broker_t *rkb,
 
 rd_kafka_resp_err_t rd_kafka_ElectLeadersRequest(
     rd_kafka_broker_t *rkb,
-    const rd_list_t *elect_leaders /*(rd_kafka_EleactLeader_t*)*/,
+    const rd_list_t *elect_leaders /*(rd_kafka_EleactLeaders_t*)*/,
     rd_kafka_AdminOptions_t *options,
     char *errstr,
     size_t errstr_size,
@@ -5881,7 +5881,7 @@ rd_kafka_resp_err_t rd_kafka_ElectLeadersRequest(
     void *opaque) {
         rd_kafka_buf_t *rkbuf;
         int16_t ApiVersion;
-        const rd_kafka_ElectLeaders_t *elect_leader;
+        const rd_kafka_ElectLeaders_t *elect_leaders_request;
         int op_timeout;
         int i;
 
@@ -5892,7 +5892,7 @@ rd_kafka_resp_err_t rd_kafka_ElectLeadersRequest(
                 return RD_KAFKA_RESP_ERR__INVALID_ARG;
         }
 
-        elect_leader = rd_list_elem(elect_leaders, 0);
+        elect_leaders_request = rd_list_elem(elect_leaders, 0);
 
         ApiVersion = rd_kafka_broker_ApiVersion_supported(
             rkb, RD_KAFKAP_ElectLeaders, 0, 2, NULL);
@@ -5907,11 +5907,13 @@ rd_kafka_resp_err_t rd_kafka_ElectLeadersRequest(
 
         rkbuf = rd_kafka_buf_new_flexver_request(
             rkb, RD_KAFKAP_ElectLeaders, 1,
-            1 + (50 + 4) * elect_leader->partitions->cnt, ApiVersion >= 2);
+            1 + (50 + 4) * elect_leaders_request->partitions->cnt,
+            ApiVersion >= 2);
 
         if (ApiVersion >= 1) {
                 /* Election type */
-                rd_kafka_buf_write_i8(rkbuf, elect_leader->electionType);
+                rd_kafka_buf_write_i8(rkbuf,
+                                      elect_leaders_request->electionType);
         }
 
         /* Write partition list */
@@ -5919,7 +5921,7 @@ rd_kafka_resp_err_t rd_kafka_ElectLeadersRequest(
             RD_KAFKA_TOPIC_PARTITION_FIELD_PARTITION,
             RD_KAFKA_TOPIC_PARTITION_FIELD_END};
         rd_kafka_buf_write_topic_partitions(
-            rkbuf, elect_leader->partitions,
+            rkbuf, elect_leaders_request->partitions,
             rd_false /*don't skip invalid offsets*/, rd_false /* any offset */,
             rd_false /* don't use topic_id */, rd_true /* use topic_names */,
             fields);
